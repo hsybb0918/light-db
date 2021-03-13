@@ -10,7 +10,7 @@ import org.junit.Test;
 public class LightDBTest {
 	
 	/**
-	 * Rigorous Test :-)
+	 * Rigorous ed.inf.adbs.lightdb.Test :-)
 	 */
 	@Test
 	public void shouldAnswerWithTrue() {

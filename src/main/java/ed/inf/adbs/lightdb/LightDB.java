@@ -1,9 +1,17 @@
 package ed.inf.adbs.lightdb;
 
+import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.util.List;
+import java.util.Map;
 
+import ed.inf.adbs.lightdb.tools.DBCatalog;
+import ed.inf.adbs.lightdb.tools.SelectExecution;
+import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.select.FromItem;
+import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 
 /**
@@ -23,7 +31,28 @@ public class LightDB {
 		String inputFile = args[1];
 		String outputFile = args[2];
 
-		parsingExample(inputFile);
+		try {
+			DBCatalog.getInstance().init(databaseDir);
+			Map<String, String> aliasToTable = DBCatalog.getInstance().getAliasToTable();
+			Map<String, List<String>> tableToSchema = DBCatalog.getInstance().getTableToSchema();
+
+//			Statement statement = CCJSqlParserUtil.parse(new FileReader(inputFile));
+			Statement statement = CCJSqlParserUtil.parse("SELECT * FROM Reserves R");
+			if (statement != null) {
+				System.out.println("Read statement: " + statement);
+				PlainSelect plainSelect = (PlainSelect) ((Select) statement).getSelectBody();
+				SelectExecution se = new SelectExecution(statement);
+				se.output(System.out);
+
+				System.out.println("");
+			}
+		} catch (Exception e) {
+			System.err.println("Exception occurred during parsing");
+			e.printStackTrace();
+		}
+
+//		parsingExample(inputFile);
+
 	}
 
 	/**
