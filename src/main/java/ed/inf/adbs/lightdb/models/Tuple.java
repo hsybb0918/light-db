@@ -56,4 +56,8 @@ public class Tuple {
 
         return sb.toString();
     }
+
+    public int getTupleValueByField(String field) {
+        return fieldToValue.get(field);
+    }
 }

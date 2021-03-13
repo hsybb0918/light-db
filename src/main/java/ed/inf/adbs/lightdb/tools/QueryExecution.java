@@ -2,6 +2,7 @@ package ed.inf.adbs.lightdb.tools;
 
 import ed.inf.adbs.lightdb.operators.Operator;
 import ed.inf.adbs.lightdb.operators.ScanOperator;
+import ed.inf.adbs.lightdb.operators.SelectOperator;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
@@ -23,7 +24,7 @@ import java.util.Map;
  * @Date: 13 March, 2021
  * @Author: Cyan
  */
-public class SelectExecution {
+public class QueryExecution {
     private PlainSelect plainSelect;
 
     // basic elements in plain select
@@ -53,7 +54,7 @@ public class SelectExecution {
     // tree root
     private Operator root;
 
-    public SelectExecution (Statement statement) {
+    public QueryExecution(Statement statement) {
         this.plainSelect = (PlainSelect) ((Select) statement).getSelectBody();
 
         // init necessary conditions
@@ -117,6 +118,10 @@ public class SelectExecution {
         List<String> singleSchema = DBCatalog.getInstance().generateTableSchema(tables.get(0));
         BufferedReader br = DBCatalog.getInstance().generateTableBuffer(tables.get(0));
         root = new ScanOperator(tables.get(0), singleSchema, br);
+
+        if (selectConditionCombination.get(tables.get(0)) != null) {
+            root = new SelectOperator(selectConditionCombination.get(tables.get(0)), root);
+        }
 
     }
 

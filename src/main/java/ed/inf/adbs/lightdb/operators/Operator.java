@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /**
  * Iterator API, basic abstract class, all operators will extend it.
@@ -16,6 +17,13 @@ import java.nio.charset.StandardCharsets;
  * @Author: Cyan
  */
 public abstract class Operator {
+    /**
+     *
+     *
+     * @return schema with table name or alias
+     */
+    public abstract List<String> getSchema();
+
     /**
      * Repeatedly get the next tuple of the output.
      *

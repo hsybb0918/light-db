@@ -35,6 +35,11 @@ public class ScanOperator extends Operator{
     }
 
     @Override
+    public List<String> getSchema() {
+        return tableSchema;
+    }
+
+    @Override
     public Tuple getNextTuple() {
         String row = null;
         try {
