@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public class Tuple {
 
-    private Map<String, Integer> fieldToValue = new LinkedHashMap<>();
+    private Map<String, Integer> tupleMap = new LinkedHashMap<>();
 
     /**
      * Initialize the tuple.
@@ -23,17 +23,12 @@ public class Tuple {
      */
     public Tuple(List<Integer> values, List<String> fields) {
         for (int i = 0; i < values.size(); i++) {
-            this.fieldToValue.put(fields.get(i), values.get(i));
+            this.tupleMap.put(fields.get(i), values.get(i));
         }
     }
 
-    public int getSize() {
-        return fieldToValue.size();
-    }
-
-
-    public int getValueByColumn(String column) {
-        return fieldToValue.get(column);
+    public Map<String, Integer> getTupleMap() {
+        return tupleMap;
     }
 
     /**
@@ -45,9 +40,9 @@ public class Tuple {
         StringBuilder sb = new StringBuilder();
 
         int count = 0;
-        for (Integer i : fieldToValue.values()) {
+        for (Integer i : tupleMap.values()) {
             sb.append(i);
-            if (count < fieldToValue.size() - 1) {
+            if (count < tupleMap.size() - 1) {
                 count++;
                 sb.append(",");
             }

@@ -36,7 +36,7 @@ public class ProjectOperator extends Operator{
         while ((tuple = child.getNextTuple()) != null) {
             List<Integer> tupleValues = new ArrayList<>();
             for (String column : selectedColumns) {
-                tupleValues.add(tuple.getValueByColumn(column));
+                tupleValues.add(tuple.getTupleMap().get(column));
             }
             return new Tuple(tupleValues, selectedColumns);
 

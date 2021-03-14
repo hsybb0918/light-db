@@ -7,21 +7,21 @@ import net.sf.jsqlparser.expression.operators.relational.*;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
 
-import java.util.List;
-
 /**
- * @ClassName: SelectVisitor
- * @Date: 13 March, 2021
+ * @ClassName: JoinVisitor
+ * @Date: 14 March, 2021
  * @Author: Cyan
  */
-public class SelectVisitor extends ExpressionDeParser {
-    private Tuple tuple;
+public class JoinVisitor extends ExpressionDeParser {
+    private Tuple leftTuple;
+    private Tuple rightTuple;
 
     private long value;
     private boolean result;
 
-    public SelectVisitor(Tuple tuple) {
-        this.tuple = tuple;
+    public JoinVisitor(Tuple leftTuple, Tuple rightTuple) {
+        this.leftTuple = leftTuple;
+        this.rightTuple = rightTuple;
     }
 
     public boolean getTupleEvaluationResult() {
@@ -37,7 +37,7 @@ public class SelectVisitor extends ExpressionDeParser {
     @Override
     public void visit(Column tableColumn) {
         String column = tableColumn.toString();
-        value = tuple.getTupleMap().get(column);
+        value = (leftTuple.getTupleMap().get(column) == null) ? rightTuple.getTupleMap().get(column) : leftTuple.getTupleMap().get(column);
     }
 
     @Override
@@ -126,6 +126,4 @@ public class SelectVisitor extends ExpressionDeParser {
             result = false;
         }
     }
-
-
 }

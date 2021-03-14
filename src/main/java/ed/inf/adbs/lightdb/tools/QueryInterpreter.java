@@ -1,9 +1,6 @@
 package ed.inf.adbs.lightdb.tools;
 
-import ed.inf.adbs.lightdb.operators.Operator;
-import ed.inf.adbs.lightdb.operators.ProjectOperator;
-import ed.inf.adbs.lightdb.operators.ScanOperator;
-import ed.inf.adbs.lightdb.operators.SelectOperator;
+import ed.inf.adbs.lightdb.operators.*;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
@@ -114,13 +111,39 @@ public class QueryInterpreter {
 
     public void executeQueryPlan() {
         List<String> singleSchema = DBCatalog.getInstance().generateTableSchema(tables.get(0));
-        BufferedReader br = DBCatalog.getInstance().generateTableBuffer(tables.get(0));
-        root = new ScanOperator(tables.get(0), singleSchema, br);
+        BufferedReader bufferedReader = DBCatalog.getInstance().generateTableBuffer(tables.get(0));
+        root = new ScanOperator(tables.get(0), singleSchema, bufferedReader);
 
+        // base table
         if (selectConditionCombination.get(tables.get(0)) != null) {
             root = new SelectOperator(selectConditionCombination.get(tables.get(0)), root);
         }
 
+
+
+        // if more than one table, then do select and join
+        if (tables.size() > 1) {
+            int i = 1;
+            while (i < tables.size()) {
+                List<String> otherSchema = DBCatalog.getInstance().generateTableSchema(tables.get(i));
+                BufferedReader otherReader = DBCatalog.getInstance().generateTableBuffer(tables.get(i));
+                Operator otherOperator = new ScanOperator(tables.get(i), otherSchema, otherReader);
+
+                if (selectConditionCombination.get(tables.get(i)) != null) {
+                    otherOperator = new SelectOperator(selectConditionCombination.get(tables.get(i)), otherOperator);
+                }
+
+                // Ensure left-associativity in join, we add left child as the
+                // current table .
+                // Then we add the right join with a scan parent (as tables are
+                // always leaves and have a scan immediately above them)
+                root = new JoinOperator(joinConditionCombination.get(tables.get(i)), root, otherOperator);
+
+                i++;
+            }
+        }
+
+        // select condition on base table
         if (!(selectItems.get(0) instanceof AllColumns)) {
             root = new ProjectOperator(selectItems, root);
         }
