@@ -34,7 +34,7 @@ public class LightDB {
 			Map<String, List<String>> tableToSchema = DBCatalog.getInstance().getTableToSchema();
 
 //			Statement statement = CCJSqlParserUtil.parse(new FileReader(inputFile));
-			Statement statement = CCJSqlParserUtil.parse("SELECT * FROM Sailors ORDER BY Sailors.B, Sailors.C;");
+			Statement statement = CCJSqlParserUtil.parse("SELECT * FROM Sailors ORDER BY Sailors.B;");
 			if (statement != null) {
 				System.out.println("Read statement: " + statement);
 				PlainSelect plainSelect = (PlainSelect) ((Select) statement).getSelectBody();

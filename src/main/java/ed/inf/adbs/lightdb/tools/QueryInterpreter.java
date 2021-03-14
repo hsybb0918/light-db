@@ -181,6 +181,17 @@ public class QueryInterpreter {
 
 
         // last step, distinct
+        if (distinct != null) {
+            root = new DuplicateEliminationOperator(root);
+//            if (orderByElements == null) { //
+//                currentRoot = new SortOperator(new ArrayList<OrderByElement>(), currentRoot);
+//            }
+//            if (orderAllSelectedColumns) {
+//                currentRoot = new HashDuplicateEliminationOperator(currentRoot);
+//            } else {
+//                currentRoot = new DuplicateEliminationOperator(currentRoot);
+//            }
+        }
 
 
 
