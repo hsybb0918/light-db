@@ -36,8 +36,8 @@ public class SelectVisitor extends ExpressionDeParser {
 
     @Override
     public void visit(Column tableColumn) {
-        String columnName = tableColumn.getColumnName();
-        value = tuple.getTupleValueByField(columnName);
+        String field = tableColumn.toString();
+        value = tuple.getValueByColumn(field);
     }
 
     @Override

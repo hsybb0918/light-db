@@ -17,12 +17,6 @@ import java.util.List;
  * @Author: Cyan
  */
 public abstract class Operator {
-    /**
-     *
-     *
-     * @return schema with table name or alias
-     */
-    public abstract List<String> getSchema();
 
     /**
      * Repeatedly get the next tuple of the output.

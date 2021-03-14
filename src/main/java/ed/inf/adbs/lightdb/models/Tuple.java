@@ -1,6 +1,7 @@
 package ed.inf.adbs.lightdb.models;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -12,29 +13,27 @@ import java.util.Map;
  * @Author: Cyan
  */
 public class Tuple {
-    private String tableName;
-    private Map<String, Integer> fieldToValue = new HashMap<>();
+
+    private Map<String, Integer> fieldToValue = new LinkedHashMap<>();
 
     /**
      * Initialize the tuple.
      *  @param values values of corresponding field names
      * @param fields field names
-     * @param tableName table name
      */
-    public Tuple(List<Integer> values, List<String> fields, String tableName) {
+    public Tuple(List<Integer> values, List<String> fields) {
         for (int i = 0; i < values.size(); i++) {
             this.fieldToValue.put(fields.get(i), values.get(i));
         }
-        this.tableName = tableName;
     }
 
-    /**
-     * Get the size of the tuple.
-     *
-     * @return size of the tuple
-     */
     public int getSize() {
         return fieldToValue.size();
+    }
+
+
+    public int getValueByColumn(String column) {
+        return fieldToValue.get(column);
     }
 
     /**
@@ -57,7 +56,4 @@ public class Tuple {
         return sb.toString();
     }
 
-    public int getTupleValueByField(String field) {
-        return fieldToValue.get(field);
-    }
 }

@@ -1,6 +1,7 @@
 package ed.inf.adbs.lightdb.tools;
 
 import ed.inf.adbs.lightdb.operators.Operator;
+import ed.inf.adbs.lightdb.operators.ProjectOperator;
 import ed.inf.adbs.lightdb.operators.ScanOperator;
 import ed.inf.adbs.lightdb.operators.SelectOperator;
 import net.sf.jsqlparser.expression.BinaryExpression;
@@ -12,10 +13,7 @@ import net.sf.jsqlparser.statement.select.*;
 
 import java.io.BufferedReader;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Generate the query plan and process from top to down
@@ -24,7 +22,7 @@ import java.util.Map;
  * @Date: 13 March, 2021
  * @Author: Cyan
  */
-public class QueryExecution {
+public class QueryInterpreter {
     private PlainSelect plainSelect;
 
     // basic elements in plain select
@@ -54,7 +52,7 @@ public class QueryExecution {
     // tree root
     private Operator root;
 
-    public QueryExecution(Statement statement) {
+    public QueryInterpreter(Statement statement) {
         this.plainSelect = (PlainSelect) ((Select) statement).getSelectBody();
 
         // init necessary conditions
@@ -71,10 +69,10 @@ public class QueryExecution {
         // init collections
         this.tables = new ArrayList<>();
         this.constantCondition = new ArrayList<>();
-        this.selectCondition = new HashMap<>();
-        this.joinCondition = new HashMap<>();
-        this.selectConditionCombination = new HashMap<>();
-        this.joinConditionCombination = new HashMap<>();
+        this.selectCondition = new LinkedHashMap<>();
+        this.joinCondition = new LinkedHashMap<>();
+        this.selectConditionCombination = new LinkedHashMap<>();
+        this.joinConditionCombination = new LinkedHashMap<>();
 
         // process from, generate tables, generate select and join condition keys
         DBCatalog.getInstance().getAliasToTable().clear();
@@ -121,6 +119,10 @@ public class QueryExecution {
 
         if (selectConditionCombination.get(tables.get(0)) != null) {
             root = new SelectOperator(selectConditionCombination.get(tables.get(0)), root);
+        }
+
+        if (!(selectItems.get(0) instanceof AllColumns)) {
+            root = new ProjectOperator(selectItems, root);
         }
 
     }

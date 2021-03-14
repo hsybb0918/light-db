@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import ed.inf.adbs.lightdb.tools.DBCatalog;
-import ed.inf.adbs.lightdb.tools.QueryExecution;
+import ed.inf.adbs.lightdb.tools.QueryInterpreter;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
@@ -34,11 +34,11 @@ public class LightDB {
 			Map<String, List<String>> tableToSchema = DBCatalog.getInstance().getTableToSchema();
 
 //			Statement statement = CCJSqlParserUtil.parse(new FileReader(inputFile));
-			Statement statement = CCJSqlParserUtil.parse("SELECT Reserves.G, Reserves.H FROM Reserves where Reserves.G=1");
+			Statement statement = CCJSqlParserUtil.parse("SELECT Reserves.H FROM Reserves where Reserves.G>1");
 			if (statement != null) {
 				System.out.println("Read statement: " + statement);
 				PlainSelect plainSelect = (PlainSelect) ((Select) statement).getSelectBody();
-				QueryExecution se = new QueryExecution(statement);
+				QueryInterpreter se = new QueryInterpreter(statement);
 				se.output(System.out);
 
 				System.out.println("");

@@ -13,23 +13,14 @@ import java.util.List;
  */
 public class SelectOperator extends Operator{
     private Operator child;
-
     private Expression expression;
-    private List<String> schema;
 
     private Tuple tuple;
     private SelectVisitor selectVisitor;
 
     public SelectOperator(Expression expression, Operator child) {
         this.child = child;
-
         this.expression = expression;
-        this.schema = child.getSchema();
-    }
-
-    @Override
-    public List<String> getSchema() {
-        return child.getSchema();
     }
 
     @Override

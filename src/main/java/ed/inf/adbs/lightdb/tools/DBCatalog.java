@@ -4,10 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Keep track of information such as where a file for a given table is located, what the schema is, etc.,
@@ -79,8 +76,8 @@ public class DBCatalog {
 
     public void init(String dbDirectory) {
         // init the variables
-        this.tableToSchema = new HashMap<>();
-        this.aliasToTable = new HashMap<>();
+        this.tableToSchema = new LinkedHashMap<>();
+        this.aliasToTable = new LinkedHashMap<>();
 
         // init database directory and the schema file
         this.dataDirectory = dbDirectory + File.separator + "data" + File.separator;

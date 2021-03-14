@@ -18,25 +18,18 @@ import java.util.List;
 public class ScanOperator extends Operator{
 
     private String tableName;
-    private List<String> singleSchema;
     private BufferedReader tableBuffer;
 
     private List<String> tableSchema;
 
     public ScanOperator(String tableName, List<String> singleSchema, BufferedReader tableBuffer) {
         this.tableName = tableName;
-        this.singleSchema = singleSchema;
         this.tableBuffer = tableBuffer;
 
+        this.tableSchema = new ArrayList<>();
         for (String field : singleSchema) {
-            this.tableSchema = new ArrayList<>();
             this.tableSchema.add(tableName + '.' + field);
         }
-    }
-
-    @Override
-    public List<String> getSchema() {
-        return tableSchema;
     }
 
     @Override
@@ -57,7 +50,7 @@ public class ScanOperator extends Operator{
             tupleValues.add(Integer.parseInt(rowValues[i]));
         }
 
-        Tuple tup = new Tuple(tupleValues, singleSchema, tableName);
+        Tuple tup = new Tuple(tupleValues, tableSchema);
         return tup;
     }
 
