@@ -119,8 +119,6 @@ public class QueryInterpreter {
             root = new SelectOperator(selectConditionCombination.get(tables.get(0)), root);
         }
 
-
-
         // if more than one table, then do select and join
         if (tables.size() > 1) {
             int i = 1;
@@ -143,10 +141,48 @@ public class QueryInterpreter {
             }
         }
 
-        // select condition on base table
-        if (!(selectItems.get(0) instanceof AllColumns)) {
-            root = new ProjectOperator(selectItems, root);
+
+
+        if (orderByElements != null) { // need sorting
+            if (!(selectItems.get(0) instanceof AllColumns)) { // sorting plus project
+
+                // sort and project -> extract as a method
+                boolean sortBeforeProject;
+
+                Set<String> selectedColumns = new HashSet<>();
+                Set<String> orderedColumns = new HashSet<>();
+
+                for (OrderByElement orderByElement : orderByElements)
+                    orderedColumns.add(orderByElement.toString());
+
+                for (SelectItem selectItem : selectItems)
+                    selectedColumns.add(selectItem.toString());
+
+                orderedColumns.removeAll(selectedColumns);
+                sortBeforeProject = !orderedColumns.isEmpty();
+
+
+
+                if (sortBeforeProject) {
+                    root = new ProjectOperator(selectItems, new SortOperator(orderByElements, root));
+                } else {
+                    root = new SortOperator(orderByElements, new ProjectOperator(selectItems, root));
+                }
+
+            } else { // only sorting
+                root = new SortOperator(orderByElements, root);
+            }
+        } else {// no order-by so just select all columns // only projecting
+            // projection
+            if (!(selectItems.get(0) instanceof AllColumns)) { // only project when not all columns required
+                root = new ProjectOperator(selectItems, root);
+            }
         }
+
+
+        // last step, distinct
+
+
 
     }
 
