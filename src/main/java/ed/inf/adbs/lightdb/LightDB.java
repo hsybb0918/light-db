@@ -1,14 +1,11 @@
 package ed.inf.adbs.lightdb;
 
 import java.io.*;
-import java.util.List;
-import java.util.Map;
 
 import ed.inf.adbs.lightdb.tools.DBCatalog;
 import ed.inf.adbs.lightdb.tools.QueryInterpreter;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 
 /**
@@ -30,10 +27,11 @@ public class LightDB {
 	}
 
 	/**
+	 * Parse and execute the query.
 	 *
-	 * @param databaseDir
-	 * @param inputFile
-	 * @param outputFile
+	 * @param databaseDir database directory
+	 * @param inputFile input file name
+	 * @param outputFile output file name
 	 */
 	public static void parseQuery(String databaseDir, String inputFile, String outputFile) {
 		try {
@@ -47,8 +45,7 @@ public class LightDB {
 				// init the query interpreter
 				QueryInterpreter se = new QueryInterpreter(statement);
 				// output the result to file
-				PrintStream ps = new PrintStream(outputFile);
-				se.output(ps);
+				se.output(new PrintStream(outputFile));
 			}
 		} catch (Exception e) {
 			System.err.println("Exception occurred during parsing.");

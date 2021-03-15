@@ -105,7 +105,7 @@ public class QueryInterpreter {
         BufferedReader bufferedReader = DBCatalog.getInstance().generateTableBuffer(tables.get(0));
         current = new ScanOperator(tables.get(0), singleSchema, bufferedReader);
 
-        // STEP 2: deal with select and join operator
+        // STEP 2: deal with constant condition, apply select and join operator
         // evaluate constant condition
         if (constantConditionCombination != null) {
             ConstantVisitor constantVisitor = new ConstantVisitor();
@@ -126,8 +126,8 @@ public class QueryInterpreter {
         // if select all columns, no need to project, directly sort
         // if no need to sort, directly project
         // if need to sort and project, then determine on two strategy:
-        // --- if sorted columns in projected columns, first project then sort
-        // --- if sorted columns in projected columns, first sort then project
+        // --- if sorted columns are in projected columns, first project then sort
+        // --- if sorted columns are not in projected columns, first sort then project
         if (orderByElements != null) { // need sort and project
             if (!(selectItems.get(0) instanceof AllColumns)) { // sort plus project
 
@@ -189,7 +189,7 @@ public class QueryInterpreter {
             }
         }
 
-        // process and expressions to select or join conditions according to the table
+        // process and expressions to constant, select or join conditions according to the table
         for (Expression ex : andExpressions) {
             List<String> tableNames = getTableNamesInExpression(ex);
 
