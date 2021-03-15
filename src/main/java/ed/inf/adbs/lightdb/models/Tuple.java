@@ -1,6 +1,5 @@
 package ed.inf.adbs.lightdb.models;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,25 +7,34 @@ import java.util.Map;
 /**
  * Handle tuples as objects.
  *
- * @ClassName: Tuple
- * @Date: 12 March, 2021
- * @Author: Cyan
+ * ClassName: Tuple
+ * Date: 12 March, 2021
+ * Author: Cyan
  */
 public class Tuple {
-
-    private Map<String, Integer> tupleMap = new LinkedHashMap<>();
+    private Map<String, Integer> tupleMap;
 
     /**
-     * Initialize the tuple.
-     *  @param values values of corresponding field names
-     * @param fields field names
+     * Constructor: initialize the tuple map.
+     *
+     * @param values values of corresponding column names
+     * @param column column names
      */
-    public Tuple(List<Integer> values, List<String> fields) {
+    public Tuple(List<Integer> values, List<String> column) {
+        // use linked hashmap in order to make it in order
+        this.tupleMap = new LinkedHashMap<>();
+
+        // put together as a map
         for (int i = 0; i < values.size(); i++) {
-            this.tupleMap.put(fields.get(i), values.get(i));
+            this.tupleMap.put(column.get(i), values.get(i));
         }
     }
 
+    /**
+     * Getter: get the member map.
+     *
+     * @return tuple map
+     */
     public Map<String, Integer> getTupleMap() {
         return tupleMap;
     }
@@ -42,6 +50,8 @@ public class Tuple {
         int count = 0;
         for (Integer i : tupleMap.values()) {
             sb.append(i);
+
+            // add comma between columns
             if (count < tupleMap.size() - 1) {
                 count++;
                 sb.append(",");
@@ -50,5 +60,4 @@ public class Tuple {
 
         return sb.toString();
     }
-
 }

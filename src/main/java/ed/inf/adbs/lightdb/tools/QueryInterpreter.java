@@ -13,11 +13,11 @@ import java.io.PrintStream;
 import java.util.*;
 
 /**
- * Generate the query plan and process from top to down
+ * Interpret the query.
  *
- * @ClassName: SelectExecution
- * @Date: 13 March, 2021
- * @Author: Cyan
+ * ClassName: SelectExecution
+ * Date: 13 March, 2021
+ * Author: Cyan
  */
 public class QueryInterpreter {
     private PlainSelect plainSelect;
@@ -36,19 +36,25 @@ public class QueryInterpreter {
     // tables appeared in query
     private List<String> tables;
 
-    // conditions types: constant, select, join
+    // tables mapping to the constant, select and join condition
     private List<Expression> constantCondition;
     private Map<String, List<Expression>> selectCondition;
     private Map<String, List<Expression>> joinCondition;
 
-    // table and corresponding contacted conditions
-    // mainly used in tree building
+    // tables mapping to the corresponding contacted conditions from above
+    // used in tree building as operator parameter
+    private Expression constantConditionCombination;
     private Map<String, Expression> selectConditionCombination;
     private Map<String, Expression> joinConditionCombination;
 
     // tree root
     private Operator root;
 
+    /**
+     * Constructor: once call, the interpretation finishes.
+     *
+     * @param statement query statement
+     */
     public QueryInterpreter(Statement statement) {
         this.plainSelect = (PlainSelect) ((Select) statement).getSelectBody();
 
@@ -71,82 +77,61 @@ public class QueryInterpreter {
         this.selectConditionCombination = new LinkedHashMap<>();
         this.joinConditionCombination = new LinkedHashMap<>();
 
-        // process from, generate tables, generate select and join condition keys
-        DBCatalog.getInstance().getAliasToTable().clear();
-        processFromItem(fromItem);
+        // first interpret query
+        interpretQuery();
 
-        if (joins != null) {
-            for (Join join : joins) {
-                FromItem joinFromItem = join.getRightItem();
-                processFromItem(joinFromItem);
-            }
-        }
-
-        // process and expressions to constant, select or join conditions
-        for (Expression ex : andExpressions) {
-            List<String> tableNames = getTableNamesInExpression(ex);
-
-            if (tableNames.size() == 0) { // no tables means it is a constant expression
-                constantCondition.add(ex);
-                continue;
-            }
-
-            int index = getTableNamesMaxIndex(tableNames);
-            if (tableNames.size() == 1) { // one table means it is a select expression
-                selectCondition.get(tables.get(index)).add(ex);
-            } else { // two tables means it is a join expression
-                joinCondition.get(tables.get(index)).add(ex);
-            }
-        }
-
-        // combine selection and join expressions to one for each table
-        for (String table : tables) {
-            selectConditionCombination.put(table, processExpressionCombination(selectCondition.get(table)));
-            joinConditionCombination.put(table, processExpressionCombination(joinCondition.get(table)));
-        }
-
-        // execute
-        executeQueryPlan();
+        // then build the tree, construct the query plan
+        executeQuery();
     }
 
-    public void executeQueryPlan() {
-        List<String> singleSchema = DBCatalog.getInstance().generateTableSchema(tables.get(0));
+    /**
+     * Output to stream.
+     *
+     * @param ps output stream
+     */
+    public void output(PrintStream ps) {
+        root.dump(ps); // dump from root
+    }
+
+    /**
+     * Build the query tree.
+     */
+    private void executeQuery() {
+        Operator current;
+
+        // STEP 1: init base table
+        // first apply scan operator on the first table
+        List<String> singleSchema = DBCatalog.getInstance().generateSingleSchema(tables.get(0));
         BufferedReader bufferedReader = DBCatalog.getInstance().generateTableBuffer(tables.get(0));
-        root = new ScanOperator(tables.get(0), singleSchema, bufferedReader);
+        current = new ScanOperator(tables.get(0), singleSchema, bufferedReader);
 
-        // base table
-        if (selectConditionCombination.get(tables.get(0)) != null) {
-            root = new SelectOperator(selectConditionCombination.get(tables.get(0)), root);
-        }
+        // STEP 2: deal with select and join operator
+        // evaluate constant condition
+        if (constantConditionCombination != null) {
+            ConstantVisitor constantVisitor = new ConstantVisitor();
+            constantConditionCombination.accept(constantVisitor);
 
-        // if more than one table, then do select and join
-        if (tables.size() > 1) {
-            int i = 1;
-            while (i < tables.size()) {
-                List<String> otherSchema = DBCatalog.getInstance().generateTableSchema(tables.get(i));
-                BufferedReader otherReader = DBCatalog.getInstance().generateTableBuffer(tables.get(i));
-                Operator otherOperator = new ScanOperator(tables.get(i), otherSchema, otherReader);
-
-                if (selectConditionCombination.get(tables.get(i)) != null) {
-                    otherOperator = new SelectOperator(selectConditionCombination.get(tables.get(i)), otherOperator);
-                }
-
-                // Ensure left-associativity in join, we add left child as the
-                // current table .
-                // Then we add the right join with a scan parent (as tables are
-                // always leaves and have a scan immediately above them)
-                root = new JoinOperator(joinConditionCombination.get(tables.get(i)), root, otherOperator);
-
-                i++;
+            // if false, ignore the where clause, means no need to use select operator
+            // if true, ignore the constant condition
+            if (!constantVisitor.getTupleEvaluationResult()) { // false
+                current = applyJoinOperator(current);
+            } else { // true
+                current = applySelectJoinOperator(current);
             }
+        } else { // if no constant condition, do as normal
+            current = applySelectJoinOperator(current);
         }
 
+        // STEP 3: deal with sort and project operator
+        // if select all columns, no need to project, directly sort
+        // if no need to sort, directly project
+        // if need to sort and project, then determine on two strategy:
+        // --- if sorted columns in projected columns, first project then sort
+        // --- if sorted columns in projected columns, first sort then project
+        if (orderByElements != null) { // need sort and project
+            if (!(selectItems.get(0) instanceof AllColumns)) { // sort plus project
 
-
-        if (orderByElements != null) { // need sorting
-            if (!(selectItems.get(0) instanceof AllColumns)) { // sorting plus project
-
-                // sort and project -> extract as a method
+                // whether need to sort then project
                 boolean sortBeforeProject;
 
                 Set<String> selectedColumns = new HashSet<>();
@@ -161,46 +146,144 @@ public class QueryInterpreter {
                 orderedColumns.removeAll(selectedColumns);
                 sortBeforeProject = !orderedColumns.isEmpty();
 
-
-
+                // determine between two strategies
                 if (sortBeforeProject) {
-                    root = new ProjectOperator(selectItems, new SortOperator(orderByElements, root));
+                    current = new ProjectOperator(selectItems, new SortOperator(orderByElements, current));
                 } else {
-                    root = new SortOperator(orderByElements, new ProjectOperator(selectItems, root));
+                    current = new SortOperator(orderByElements, new ProjectOperator(selectItems, current));
                 }
 
-            } else { // only sorting
-                root = new SortOperator(orderByElements, root);
+            } else { // no need project, only sort
+                current = new SortOperator(orderByElements, current);
             }
-        } else {// no order-by so just select all columns // only projecting
-            // projection
+        } else { // no need sort, only project
             if (!(selectItems.get(0) instanceof AllColumns)) { // only project when not all columns required
-                root = new ProjectOperator(selectItems, root);
+                current = new ProjectOperator(selectItems, current);
             }
         }
 
-
-        // last step, distinct
+        // STEP 4: deal with distinct operator
         if (distinct != null) {
-            root = new DuplicateEliminationOperator(root);
-//            if (orderByElements == null) { //
-//                currentRoot = new SortOperator(new ArrayList<OrderByElement>(), currentRoot);
-//            }
-//            if (orderAllSelectedColumns) {
-//                currentRoot = new HashDuplicateEliminationOperator(currentRoot);
-//            } else {
-//                currentRoot = new DuplicateEliminationOperator(currentRoot);
-//            }
+            current = new DuplicateEliminationOperator(current);
         }
 
-
-
+        // STEP 5: set the root
+        root = current;
     }
 
-    public void output(PrintStream ps) {
-        root.dump(ps);
+    /**
+     * Interpret the query.
+     */
+    private void interpretQuery() {
+        // clear alias table
+        DBCatalog.getInstance().getAliasToTable().clear();
+
+        // generate tables, init select and join condition in from
+        processFromItem(fromItem);
+
+        // generate tables, init select and join condition in join
+        if (joins != null) {
+            for (Join join : joins) {
+                FromItem joinFromItem = join.getRightItem();
+                processFromItem(joinFromItem);
+            }
+        }
+
+        // process and expressions to select or join conditions according to the table
+        for (Expression ex : andExpressions) {
+            List<String> tableNames = getTableNamesInExpression(ex);
+
+            if (tableNames.isEmpty()) { // no tables means it is a constant expression
+                constantCondition.add(ex);
+                continue;
+            }
+
+            int index = getTableNamesMaxIndex(tableNames); // get max table index
+            if (tableNames.size() == 1) { // one table means it is a select expression
+                selectCondition.get(tables.get(index)).add(ex);
+            } else { // two tables means it is a join expression
+                joinCondition.get(tables.get(index)).add(ex);
+            }
+        }
+
+        // combine constant expressions
+        this.constantConditionCombination = processExpressionCombination(constantCondition);
+
+        // combine selection and join expressions to one for each table
+        for (String table : tables) {
+            selectConditionCombination.put(table, processExpressionCombination(selectCondition.get(table)));
+            joinConditionCombination.put(table, processExpressionCombination(joinCondition.get(table)));
+        }
     }
 
+    /**
+     * Apply select and join operator on all tables.
+     *
+     * @param current current root
+     * @return new root
+     */
+    private Operator applySelectJoinOperator(Operator current) {
+        // if have select condition on the first table, then apply select operator
+        if (selectConditionCombination.get(tables.get(0)) != null) {
+            current = new SelectOperator(selectConditionCombination.get(tables.get(0)), current);
+        }
+
+        // if more than one table, then do select and join operator on tables one by one
+        if (tables.size() > 1) {
+            int i = 1;
+            while (i < tables.size()) {
+                // first init scan operator on current table
+                List<String> otherSchema = DBCatalog.getInstance().generateSingleSchema(tables.get(i));
+                BufferedReader otherReader = DBCatalog.getInstance().generateTableBuffer(tables.get(i));
+                Operator node = new ScanOperator(tables.get(i), otherSchema, otherReader);
+
+                // if the table has select condition, apply select operator
+                if (selectConditionCombination.get(tables.get(i)) != null) {
+                    node = new SelectOperator(selectConditionCombination.get(tables.get(i)), node);
+                }
+
+                // since should be a left deep join tree, add the last table as the left child and
+                // set current table as the right child
+                current = new JoinOperator(joinConditionCombination.get(tables.get(i)), current, node);
+
+                i++; // advance index if more table
+            }
+        }
+        return current;
+    }
+
+    /**
+     * Apply only join operator on all tables.
+     *
+     * @param current current root
+     * @return new root
+     */
+    private Operator applyJoinOperator(Operator current) {
+        // if more than one table, then join tables one by one
+        if (tables.size() > 1) {
+            int i = 1;
+            while (i < tables.size()) {
+                // first init scan operator on current table
+                List<String> otherSchema = DBCatalog.getInstance().generateSingleSchema(tables.get(i));
+                BufferedReader otherReader = DBCatalog.getInstance().generateTableBuffer(tables.get(i));
+                Operator node = new ScanOperator(tables.get(i), otherSchema, otherReader);
+
+                // since should be a left deep join tree, add the last table as the left child and
+                // set current table as the right child
+                current = new JoinOperator(joinConditionCombination.get(tables.get(i)), current, node);
+
+                i++; // advance index if more table
+            }
+        }
+        return current;
+    }
+
+    /**
+     * Combine expressions to one and expression.
+     *
+     * @param expressions list of expressions
+     * @return one and expression
+     */
     private Expression processExpressionCombination(List<Expression> expressions) {
         if (expressions.size() == 0) {
             return null;
@@ -215,16 +298,27 @@ public class QueryInterpreter {
         return combination;
     }
 
+    /**
+     * Get the max table index, it is mainly useful for join condition,
+     * the join condition need to process as late as possible, otherwise the table may noy start join.
+     *
+     * @param tableNames list of table names in expression
+     * @return index
+     */
     private int getTableNamesMaxIndex(List<String> tableNames) {
         int pos = 0;
         for (String tableName : tableNames) {
-            //pos = Math.max(tables.indexOf(tableName), pos);
-            int temp = tables.indexOf(tableName);
-            pos = (temp > pos) ? temp : pos;
+            pos = (tables.indexOf(tableName) > pos) ? tables.indexOf(tableName) : pos;
         }
         return pos;
     }
 
+    /**
+     * Get the names in the single expression.
+     *
+     * @param expression expression
+     * @return list of table names or alias
+     */
     private List<String> getTableNamesInExpression(Expression expression) {
         List<String> tableNames = new ArrayList<>();
 
@@ -249,26 +343,40 @@ public class QueryInterpreter {
         return tableNames;
     }
 
+    /**
+     * Process the tables in from clause, and init select and join condition.
+     *
+     * @param fi from item
+     */
     private void processFromItem(FromItem fi) {
         String name;
-        if (fi.getAlias() != null) { // if alias exists, set its alias
+        if (fi.getAlias() != null) { // if alias exists, set its alias in database catalog
             name = fi.getAlias().toString().trim();
             DBCatalog.getInstance().getAliasToTable().put(name, fi.toString().split(" ")[0]);
-        } else { // else use table name
+        } else { // else use table name, no need to set database catalog
             name = fi.toString();
         }
+
+        // add table name or alias, in order
         tables.add(name);
 
+        // init select and join condition
         selectCondition.put(name, new ArrayList<>());
         joinCondition.put(name, new ArrayList<>());
     }
 
+    /**
+     * Split the where clause to expressions
+     *
+     * @param expression expression
+     * @return list of expressions
+     */
     private List<Expression> processWhereToExpressions(Expression expression) {
         List<Expression> expressions = new ArrayList<>();
         while (expression instanceof AndExpression) {
             AndExpression andExpression = (AndExpression) expression;
             expressions.add(0, andExpression.getRightExpression()); // 0 -> correct the order
-            expression = andExpression.getLeftExpression();
+            expression = andExpression.getLeftExpression(); // if and expression, continue to split
         }
         expressions.add(expression);
 

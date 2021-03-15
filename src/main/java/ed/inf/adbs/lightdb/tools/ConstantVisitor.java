@@ -1,36 +1,25 @@
 package ed.inf.adbs.lightdb.tools;
 
-import ed.inf.adbs.lightdb.models.Tuple;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.relational.*;
-import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
 
 /**
- * Visitor for join condition expression.
+ * Visitor on the expression with left and right constants.
  *
- * ClassName: JoinVisitor
- * Date: 14 March, 2021
+ * ClassName: ConstantVisitor
+ * Date: 15 March, 2021
  * Author: Cyan
  */
-public class JoinVisitor extends ExpressionDeParser {
-    private Tuple leftTuple;
-    private Tuple rightTuple;
-
+public class ConstantVisitor extends ExpressionDeParser {
     private long value;
     private boolean result;
 
     /**
-     * Constructor: init left and right tuple.
-     *
-     * @param leftTuple left tuple object
-     * @param rightTuple right tuple object
+     * Constructor: nothing init.
      */
-    public JoinVisitor(Tuple leftTuple, Tuple rightTuple) {
-        this.leftTuple = leftTuple;
-        this.rightTuple = rightTuple;
-    }
+    public ConstantVisitor() { }
 
     /**
      * Get the evaluation result.
@@ -42,6 +31,7 @@ public class JoinVisitor extends ExpressionDeParser {
     }
 
     /**
+     * CONSTANT VISITOR HAVE NO VISIT METHOD ON COLUMN.
      * If long value, just set value.
      *
      * @param longValue long value
@@ -49,19 +39,6 @@ public class JoinVisitor extends ExpressionDeParser {
     @Override
     public void visit(LongValue longValue) {
         value = longValue.getValue();
-    }
-
-    /**
-     * ONLY HERE IS DIFFERENT FROM SELECT VISITOR.
-     * If column, set the value corresponding to the column name of left or right tuple.
-     * Because the schema is prefixed with table, there will not have the same schema name.
-     *
-     * @param tableColumn column
-     */
-    @Override
-    public void visit(Column tableColumn) {
-        String column = tableColumn.toString();
-        value = (leftTuple.getTupleMap().get(column) == null) ? rightTuple.getTupleMap().get(column) : leftTuple.getTupleMap().get(column);
     }
 
     /**

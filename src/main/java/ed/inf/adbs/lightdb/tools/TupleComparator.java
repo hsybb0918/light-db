@@ -6,20 +6,34 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * @ClassName: CustomComparator
- * @Date: 14 March, 2021
- * @Author: Cyan
+ * Comparator used to compare tuples when sorting.
+ *
+ * ClassName: CustomComparator
+ * Date: 14 March, 2021
+ * Author: Cyan
  */
-public class CustomComparator implements Comparator<Tuple> {
-    private List<String> orderColumns;
+public class TupleComparator implements Comparator<Tuple> {
+    private List<String> orderColumns; // columns required to sorting
 
-    public CustomComparator(List<String> orderColumns) {
+    /**
+     * Constructor: init columns required to sorting
+     *
+     * @param orderColumns column names
+     */
+    public TupleComparator(List<String> orderColumns) {
         this.orderColumns = orderColumns;
     }
 
+    /**
+     * Rewrite the compare function used to compare the two tuples,
+     * if more than one column, first sorting on one column, then another.
+     *
+     * @param o1 first tuple
+     * @param o2 second tuple
+     * @return 1 if larger than, or -1 if less than, or 0 if equal to
+     */
     @Override
     public int compare(Tuple o1, Tuple o2) {
-
         for (String column : orderColumns) {
             if (o1.getTupleMap().get(column) < o2.getTupleMap().get(column)) {
                 return -1;
@@ -27,25 +41,9 @@ public class CustomComparator implements Comparator<Tuple> {
             if (o1.getTupleMap().get(column) > o2.getTupleMap().get(column)) {
                 return 1;
             }
-            // Just continue if the tuples match for the given order...
+            // if continue, means the tuples match on the given ordered columns
         }
 
-        // Vikas check this.
-        boolean isPresent = false;
-        for (String key : o1.getTupleMap().keySet()) {
-            for (int j = 0; j < orderColumns.size(); j++) {
-                if (orderColumns.get(j) == key) {
-                    isPresent = true;
-                }
-            }
-            if (!isPresent) {
-                if (o1.getTupleMap().get(key) < o2.getTupleMap().get(key))
-                    return -1;
-                if (o1.getTupleMap().get(key) > o2.getTupleMap().get(key))
-                    return 1;
-            }
-        }
-
-        return 0;
+        return 0; // otherwise, two tuples are the same
     }
 }
