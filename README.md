@@ -1,5 +1,7 @@
 # Lightweight Database Management System
 
+Repository: https://github.com/hsybb0918/light-db
+
 The DBMS translates from select-from-where queries to relational algebra query plans,  and uses the iterator model for relational operator evaluation. The most common operators are implemented, including selection, projection, join, sort and distinct.
 
 NOTE: The explanation of the logic for extracting join conditions from the where clause is mentioned in **Query Interpreter** section.
